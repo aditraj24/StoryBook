@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/user.route.js";
 import storyRouter from "./routes/story.route.js";
+import followRoutes from "./routes/follow.route.js";
 import fs from "fs";
 
 const app = express();
@@ -35,5 +36,7 @@ app.use((req, res, next) => {
 //routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/stories", storyRouter);
+
+app.use("/api/v1/follow", followRoutes);
 
 export { app };

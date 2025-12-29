@@ -23,7 +23,7 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [API]);
 
   if (loading) {
     return (
@@ -43,8 +43,6 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      
-
       <div className="max-w-4xl mx-auto px-6 py-14">
         {/* Cover */}
         <div className="relative h-56 rounded-3xl overflow-hidden shadow-lg mb-16 bg-gradient-to-r from-blue-500 to-purple-600">
@@ -74,6 +72,28 @@ const ProfilePage = () => {
               {currentUser.fullName}
             </h2>
             <p className="text-gray-500 mt-1">{currentUser.email}</p>
+            {/* Stats */}
+            <div className="flex justify-center gap-10 mt-6">
+              <button
+                onClick={() => navigate("/followers")}
+                className="text-center hover:opacity-80 transition"
+              >
+                <p className="text-xl font-bold text-gray-800">
+                  {currentUser.followersCount}
+                </p>
+                <p className="text-sm text-gray-500">Followers</p>
+              </button>
+
+              <button
+                onClick={() => navigate("/following")}
+                className="text-center hover:opacity-80 transition"
+              >
+                <p className="text-xl font-bold text-gray-800">
+                  {currentUser.followingCount}
+                </p>
+                <p className="text-sm text-gray-500">Following</p>
+              </button>
+            </div>
 
             {/* Actions */}
             <div className="mt-6">

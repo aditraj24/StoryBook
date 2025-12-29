@@ -25,19 +25,51 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { fullName, email, password, userName } = req.body;
 
   if ([fullName, email, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
   }
 
+  // Check email
   const existedUser = await User.findOne({ email });
-
   if (existedUser) {
     throw new ApiError(409, "User already exists");
   }
 
-  // Optional files
+  /* ------------------------------------
+     USERNAME HANDLING
+  ------------------------------------ */
+  let finalUserName;
+
+  if (userName) {
+    // username provided
+    const exists = await User.findOne({ userName: userName.toLowerCase() });
+    if (exists) {
+      throw new ApiError(409, "Username already taken");
+    }
+    finalUserName = userName.toLowerCase();
+  } else {
+    // auto-generate username
+    const baseUserName = fullName
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+    let uniqueUserName = baseUserName;
+    let counter = 1;
+
+    while (await User.findOne({ userName: uniqueUserName })) {
+      uniqueUserName = `${baseUserName}${counter}`;
+      counter++;
+    }
+
+    finalUserName = uniqueUserName;
+  }
+
+  /* ------------------------------------
+     FILE UPLOADS
+  ------------------------------------ */
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
@@ -52,8 +84,12 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage = await uploadOnCloudinary(coverImageLocalPath);
   }
 
+  /* ------------------------------------
+     CREATE USER
+  ------------------------------------ */
   const user = await User.create({
     fullName,
+    userName: finalUserName,
     email,
     password,
     avatar: avatar?.url || "",
@@ -68,19 +104,25 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "User registration failed");
   }
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+  return res.status(201).json(
+    new ApiResponse(201, createdUser, "User registered successfully")
+  );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
+  if (!identifier || !password) {
+    throw new ApiError(400, "Email/Username and password are required");
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  // 🔍 find user by email OR username
+  const user = await User.findOne({
+    $or: [
+      { email: identifier.toLowerCase() },
+      { userName: identifier.toLowerCase() },
+    ],
+  });
 
   if (!user) {
     throw new ApiError(404, "User does not exist");
@@ -89,14 +131,13 @@ const loginUser = asyncHandler(async (req, res) => {
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user._id
-  );
+  const { accessToken, refreshToken } =
+    await generateAccessAndRefreshTokens(user._id);
 
-  // save refresh token in DB
+  // save refresh token
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
@@ -146,7 +187,13 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const editProfile = asyncHandler(async (req, res) => {
-  const { fullName, email, oldPassword, newPassword } = req.body;
+  const {
+    fullName,
+    email,
+    userName,
+    oldPassword,
+    newPassword,
+  } = req.body;
 
   const user = await User.findById(req.user?._id);
 
@@ -157,11 +204,37 @@ const editProfile = asyncHandler(async (req, res) => {
   /* ---------------- TEXT FIELDS ---------------- */
 
   if (fullName) {
-    user.fullName = fullName;
+    user.fullName = fullName.trim();
   }
 
   if (email) {
+    const emailExists = await User.findOne({
+      email: email.toLowerCase(),
+      _id: { $ne: user._id },
+    });
+
+    if (emailExists) {
+      throw new ApiError(409, "Email already in use");
+    }
+
     user.email = email.toLowerCase();
+  }
+
+  if (userName) {
+    const normalizedUserName = userName
+      .toLowerCase()
+      .replace(/\s+/g, "");
+
+    const userNameExists = await User.findOne({
+      userName: normalizedUserName,
+      _id: { $ne: user._id },
+    });
+
+    if (userNameExists) {
+      throw new ApiError(409, "Username already taken");
+    }
+
+    user.userName = normalizedUserName;
   }
 
   /* ---------------- PASSWORD UPDATE ---------------- */
@@ -180,7 +253,7 @@ const editProfile = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Invalid old password");
     }
 
-    user.password = newPassword; // will be hashed by pre-save hook
+    user.password = newPassword; // hashed by pre-save hook
   }
 
   /* ---------------- FILE UPLOADS ---------------- */
@@ -212,9 +285,9 @@ const editProfile = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, updatedUser, "Profile updated successfully")
+  );
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -262,21 +335,75 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
   return res.status(200).json(
     new ApiResponse(
       200,
       {
         _id: req.user._id,
         fullName: req.user.fullName,
+        userName: req.user.userName,
         email: req.user.email,
         avatar: req.user.avatar,
         coverImage: req.user.coverImage,
+        followers: req.user.followers,
+        following: req.user.following,
+        followersCount: req.user.followers?.length || 0,
+        followingCount: req.user.following?.length || 0,
         createdAt: req.user.createdAt,
       },
       "User fetched successfully"
     )
   );
 });
+
+const getUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const viewerId = req.user?._id; // may be undefined for public access
+
+  const user = await User.findById(id)
+    .select("-password -refreshToken")
+    .populate("friends", "fullName avatar email");
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  // 🔍 check if viewer follows this user
+  const isFollowing =
+    viewerId &&
+    user.followers?.some(
+      (followerId) => followerId.toString() === viewerId.toString()
+    );
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      _id: user._id,
+      fullName: user.fullName,
+      userName: user.userName,
+      email: user.email,
+      avatar: user.avatar,
+      coverImage: user.coverImage,
+
+      friends: user.friends || [],
+
+      followersCount: user.followers?.length || 0,
+      followingCount: user.following?.length || 0,
+
+      isFollowing: Boolean(isFollowing),
+
+      createdAt: user.createdAt,
+    },
+  });
+});
+
 
 export {
   registerUser,
@@ -285,4 +412,5 @@ export {
   refreshAccessToken,
   editProfile,
   getCurrentUser,
+  getUserById
 };

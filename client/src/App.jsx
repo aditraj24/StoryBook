@@ -10,11 +10,12 @@ import EditProfilePage from "./pages/EditProfilePage.jsx";
 import ViewStory from "./pages/ViewStory.jsx";
 import CreateStory from "./pages/CreateStory.jsx";
 import EditStory from "./pages/EditStory.jsx";
-
+import ViewUser from "./pages/ViewUser.jsx";
 import GuestRoute from "./components/GuestRoute.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Navbar from "./components/Navbar.jsx";
-
+import FollowersPage from "./pages/FollowersPage.jsx";
+import FollowingPage from "./pages/FollowingPage.jsx";
 const App = () => {
   const { user } = useAuth();
 
@@ -101,6 +102,34 @@ const App = () => {
           element={
             <ProtectedRoute>
               <EditStory />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/users/:id"
+          element={
+            <ProtectedRoute>
+              <ViewUser />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/followers"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <FollowersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/following"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <FollowingPage />
             </ProtectedRoute>
           }
         />

@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-
 const userSchema = new Schema(
   {
     fullName: {
@@ -11,14 +10,15 @@ const userSchema = new Schema(
       trim: true,
     },
 
-    // userName: {
-    //   type: String,
-    //   required: true,
-    //   unique: true,
-    //   lowercase: true,
-    //   trim: true,
-    //   unique: true,
-    // },
+    // ✅ USERNAME
+    userName: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true, // fast lookup
+    },
 
     email: {
       type: String,
@@ -43,7 +43,23 @@ const userSchema = new Schema(
       default: "",
     },
 
+    // 🔥 FRIENDS (mutual – optional, you can keep or remove later)
     friends: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    // 🔥 FOLLOW SYSTEM
+    followers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    following: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",

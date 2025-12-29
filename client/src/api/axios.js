@@ -1,6 +1,6 @@
 import axios from "axios";
-
-const baseURL = 'https://story-book-2ogb.onrender.com/api/v1';
+// ||  'http://localhost:8000/api/v1'
+const baseURL = "https://story-book-2ogb.onrender.com/api/v1";
 const api = axios.create({
   baseURL,
   withCredentials: true, // required for cookies

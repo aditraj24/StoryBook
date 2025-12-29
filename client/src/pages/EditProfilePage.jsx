@@ -7,6 +7,8 @@ const EditProfilePage = () => {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
+  const [userName, setUserName] = useState("");
+
   const [email, setEmail] = useState("");
 
   const [oldPassword, setOldPassword] = useState("");
@@ -26,6 +28,7 @@ const EditProfilePage = () => {
     if (user) {
       setFullName(user.fullName || "");
       setEmail(user.email || "");
+      setUserName(user.userName || "");
       setAvatarPreview(user.avatar || null);
       setCoverPreview(user.coverImage || null);
     }
@@ -49,14 +52,19 @@ const EditProfilePage = () => {
     e.preventDefault();
     setError("");
 
-    if (!fullName || !email) {
-      setError("Full name and email are required");
+    if (!fullName || !email || !userName) {
+      setError("Full name, username and email are required");
       return;
     }
 
     const formData = new FormData();
+
     if (fullName !== user.fullName) formData.append("fullName", fullName);
+
     if (email !== user.email) formData.append("email", email);
+
+    if (userName !== user.userName)
+      formData.append("userName", userName.toLowerCase());
 
     if (oldPassword && newPassword) {
       formData.append("oldPassword", oldPassword);
@@ -145,8 +153,8 @@ const EditProfilePage = () => {
               </p>
             )}
 
-            {/* Name & Email */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            {/* Name, Username & Email */}
+            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Full Name
@@ -155,8 +163,29 @@ const EditProfilePage = () => {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="mt-1 w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="mt-1 w-full px-4 py-3 rounded-xl border
+                 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) =>
+                    setUserName(
+                      e.target.value.toLowerCase().replace(/\s+/g, "")
+                    )
+                  }
+                  className="mt-1 w-full px-4 py-3 rounded-xl border
+                 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Lowercase, no spaces
+                </p>
               </div>
 
               <div>
@@ -167,7 +196,8 @@ const EditProfilePage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="mt-1 w-full px-4 py-3 rounded-xl border
+                 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
             </div>

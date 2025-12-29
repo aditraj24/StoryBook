@@ -7,6 +7,8 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
+  const [userName, setUserName] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -39,15 +41,17 @@ const RegisterPage = () => {
     e.preventDefault();
     setError("");
 
-    if (!fullName || !email || !password) {
-      setError("Full name, email and password are required");
+    if (!fullName || !email || !password || !userName) {
+      setError("All fields including username are required");
       return;
     }
 
     const formData = new FormData();
     formData.append("fullName", fullName);
+    formData.append("userName", userName.toLowerCase());
     formData.append("email", email);
     formData.append("password", password);
+
     if (avatar) formData.append("avatar", avatar);
     if (coverImage) formData.append("coverImage", coverImage);
 
@@ -88,23 +92,36 @@ const RegisterPage = () => {
 
         {/* Full Name */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Full Name
-          </label>
+          <label className="text-sm font-medium text-gray-700">Full Name</label>
           <input
             type="text"
-            placeholder="John Doe"
+            placeholder="Your Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className="mt-1 w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
+        {/* Username */}
+        <div>
+          <label className="text-sm font-medium text-gray-700">Username</label>
+          <input
+            type="text"
+            placeholder="username"
+            value={userName}
+            onChange={(e) =>
+              setUserName(e.target.value.toLowerCase().replace(/\s+/g, ""))
+            }
+            className="mt-1 w-full px-4 py-3 rounded-xl border
+               focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Username must be lowercase, no spaces
+          </p>
+        </div>
 
         {/* Email */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Email
-          </label>
+          <label className="text-sm font-medium text-gray-700">Email</label>
           <input
             type="email"
             placeholder="you@example.com"
@@ -116,9 +133,7 @@ const RegisterPage = () => {
 
         {/* Password */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Password
-          </label>
+          <label className="text-sm font-medium text-gray-700">Password</label>
           <input
             type="password"
             placeholder="••••••••"
