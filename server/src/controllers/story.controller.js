@@ -78,12 +78,23 @@ export const getStories = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 12;
   const { sortBy = "newest" } = req.query;
 
+  const currentUserId = req.user._id; // 🔑 logged-in user
+
   let stories = [];
-  let totalStories = await Story.countDocuments();
+
+  // count ONLY stories not owned by current user
+  const totalStories = await Story.countDocuments({
+    owner: { $ne: currentUserId },
+  });
 
   if (sortBy === "random") {
-    // ✅ TRUE RANDOM
+    // ✅ TRUE RANDOM (excluding own stories)
     stories = await Story.aggregate([
+      {
+        $match: {
+          owner: { $ne: currentUserId },
+        },
+      },
       { $sample: { size: limit } },
       {
         $lookup: {
@@ -102,13 +113,15 @@ export const getStories = asyncHandler(async (req, res) => {
       },
     ]);
   } else {
-    // Normal pagination sorting
+    // Normal pagination sorting (excluding own stories)
     const skip = (page - 1) * limit;
 
-    let sortCriteria =
+    const sortCriteria =
       sortBy === "oldest" ? { createdAt: 1 } : { createdAt: -1 };
 
-    stories = await Story.find()
+    stories = await Story.find({
+      owner: { $ne: currentUserId },
+    })
       .populate("owner", "fullName avatar")
       .sort(sortCriteria)
       .skip(skip)
@@ -132,6 +145,7 @@ export const getStories = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export const getStoryById = asyncHandler(async (req, res) => {
   const { id } = req.params;

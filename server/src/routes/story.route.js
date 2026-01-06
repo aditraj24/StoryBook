@@ -16,7 +16,7 @@ const router = Router();
 /* -------- Public Routes -------- */
 
 // 🌍 All stories (public feed)
-router.route("/").get(getStories);
+router.route("/").get(verifyJWT,getStories);
 
 /* -------- User-specific Routes -------- */
 

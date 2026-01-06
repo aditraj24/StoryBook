@@ -168,7 +168,7 @@ const ViewStory = () => {
       </div>
       <div className="pb-16 flex justify-center">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() =>  { isOwner && navigate("/my-story"); !isOwner && navigate("/"); }}
           className="group flex items-center gap-2 text-gray-500 font-semibold hover:text-gray-900 transition-colors"
         >
           <span className="group-hover:-translate-x-1 transition-transform">

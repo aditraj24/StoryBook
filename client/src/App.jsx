@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import {  Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext.jsx";
 
 import Home from "./pages/HomePage.jsx";
@@ -14,6 +14,7 @@ import GuestRoute from "./components/GuestRoute.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Navbar from "./components/Navbar.jsx";
 import UserProfile from "./pages/ViewUser.jsx";
+import StoryBot from "./pages/StoryBot.jsx";
 
 const App = () => {
   const { user } = useAuth();
@@ -104,12 +105,22 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/user/:userId" element={
-          <ProtectedRoute>
-
-            <UserProfile />
-          </ProtectedRoute>
-          } />
+        <Route
+          path="/user/:userId"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/story-bot"
+          element={
+            <ProtectedRoute>
+              <StoryBot />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );

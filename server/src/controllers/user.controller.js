@@ -27,17 +27,17 @@ const generateAccessAndRefreshTokens = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
 
+  /* ---------- Validation ---------- */
   if ([fullName, email, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const existedUser = await User.findOne({ email });
-
+  const existedUser = await User.findOne({ email: email.toLowerCase() });
   if (existedUser) {
     throw new ApiError(409, "User already exists");
   }
 
-  // Optional files
+  /* ---------- Optional files ---------- */
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
@@ -52,25 +52,48 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage = await uploadOnCloudinary(coverImageLocalPath);
   }
 
+  /* ---------- Create user ---------- */
   const user = await User.create({
     fullName,
-    email,
+    email: email.toLowerCase(),
     password,
     avatar: avatar?.url || "",
     coverImage: coverImage?.url || "",
   });
 
-  const createdUser = await User.findById(user._id).select(
+  /* ---------- Generate tokens (SAME AS LOGIN) ---------- */
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  /* ---------- Save refresh token ---------- */
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  /* ---------- Safe user ---------- */
+  const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  if (!createdUser) {
-    throw new ApiError(500, "User registration failed");
-  }
+  /* ---------- Cookie options (MATCH LOGIN) ---------- */
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  };
 
+  /* ---------- Response ---------- */
   return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(
+      new ApiResponse(
+        201,
+        { user: loggedInUser },
+        "User registered & logged in successfully"
+      )
+    );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -280,22 +303,22 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const getUserById = asyncHandler(async (req, res) => {
-    const { userId } = req.params;
+  const { userId } = req.params;
 
-    // Validate if the ID is a valid MongoDB ObjectId
-    if (!mongoose.isValidObjectId(userId)) {
-        throw new ApiError(400, "Invalid User ID");
-    }
+  // Validate if the ID is a valid MongoDB ObjectId
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid User ID");
+  }
 
-    const user = await User.findById(userId).select("-password -refreshToken");
+  const user = await User.findById(userId).select("-password -refreshToken");
 
-    if (!user) {
-        throw new ApiError(404, "User does not exist");
-    }
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
 
-    return res
-        .status(200)
-        .json(new ApiResponse(200, user, "User fetched successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User fetched successfully"));
 });
 
 export {
@@ -305,5 +328,5 @@ export {
   refreshAccessToken,
   editProfile,
   getCurrentUser,
-  getUserById
+  getUserById,
 };

@@ -61,9 +61,20 @@ const MyStoriesPage = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent inline-block">
+            <h1
+              className="
+    text-4xl
+    font-extrabold
+    leading-tight
+    pb-1
+    bg-gradient-to-r from-blue-600 to-purple-600
+    bg-clip-text text-transparent
+    inline-block
+  "
+            >
               My Stories 📚
             </h1>
+
             <p className="mt-2 text-gray-500 font-medium">
               Manage and revisit your shared memories
             </p>
